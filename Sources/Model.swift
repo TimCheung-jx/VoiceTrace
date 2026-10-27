@@ -139,7 +139,7 @@ import AppKit
  func play(_ time:Double) {
   guard phase=="空闲",let r=meeting.recordings.last(where:{$0.offset<=time}) else{status="暂无可回听的本地录音";return}
   do {player?.stop();player=try AVAudioPlayer(contentsOf:URL(fileURLWithPath:r.path));playbackOffset=r.offset;player?.currentTime=max(0,time-r.offset);playing=player?.play() ?? false;playbackPosition=time
-   playbackTicker?.invalidate();playbackTicker=Timer.scheduledTimer(withTimeInterval:0.2,repeats:true){[weak self] _ in Task {@MainActor in guard let self=self else{return};if let player=self.player {self.playbackPosition=self.playbackOffset+player.currentTime;if !player.isPlaying,player.currentTime>=player.duration-0.15,let next=self.meeting.recordings.first(where:{$0.offset>self.playbackOffset+0.01}){self.play(next.offset)}else{self.playing=player.isPlaying;if !player.isPlaying{self.playbackTicker?.invalidate()}}}}}
+   playbackTicker?.invalidate();playbackTicker=Timer.scheduledTimer(withTimeInterval:0.2,repeats:true){[weak self] _ in Task {@MainActor [weak self] in guard let self=self else{return};if let player=self.player {self.playbackPosition=self.playbackOffset+player.currentTime;if !player.isPlaying,player.currentTime>=player.duration-0.15,let next=self.meeting.recordings.first(where:{$0.offset>self.playbackOffset+0.01}){self.play(next.offset)}else{self.playing=player.isPlaying;if !player.isPlaying{self.playbackTicker?.invalidate()}}}}}
   } catch {alert="无法读取本地录音，请检查文件是否被移动"}
  }
  func togglePlayback(){if playing {player?.pause();playing=false;playbackTicker?.invalidate()}else{play(playbackPosition)}}

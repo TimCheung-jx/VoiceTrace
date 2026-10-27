@@ -1,0 +1,4 @@
+{
+  "description": "声迹 VoiceTrace：原生 macOS AI 会议工作台，支持实时转写、思维链、分歧点与多格式导出。Native macOS AI meeting notes with live transcription, discussion chains, disagreement analysis, and export.",
+  "topics": ["macos", "swiftui", "speech-to-text", "meeting-notes", "deepseek", "ai", "voice-transcription", "mit-license"]
+}

@@ -1,0 +1,23 @@
+{
+  "speech": [
+    {
+      "id": "example-speech",
+      "name": "My speech provider",
+      "region": "cn-beijing",
+      "workspace": "",
+      "realtimeModel": "fun-asr-realtime",
+      "fileModel": "fun-asr"
+    }
+  ],
+  "texts": [
+    {
+      "id": "example-text",
+      "name": "My text provider",
+      "provider": "deepseek",
+      "baseURL": "https://api.deepseek.com",
+      "model": "deepseek-flash"
+    }
+  ],
+  "speechID": "example-speech",
+  "textID": "example-text"
+}

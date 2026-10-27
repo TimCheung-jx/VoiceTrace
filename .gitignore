@@ -1,0 +1,46 @@
+# Local builds, scratch files, exports and user content
+/work/
+/outputs/
+/.build/
+/DerivedData/
+/build/
+/dist/
+*.app/
+*.dSYM/
+*.zip
+*.dmg
+*.log
+.DS_Store
+
+# Credentials, signing identities, local profiles
+.env
+.env.*
+!.env.example
+*.local.*
+*.secret.*
+*.key
+*.pem
+*.p12
+*.pfx
+*.cer
+*.mobileprovision
+*.keychain
+*.keychain-db
+
+# Meeting data must never be versioned
+meeting.json
+audio-*
+*.pcm
+*.wav
+*.mp3
+*.m4a
+*.aac
+*.mp4
+*.mov
+*.sqlite*
+*.db
+/private-data/
+/recordings/
+/meetings/
+__pycache__/
+*.py[cod]

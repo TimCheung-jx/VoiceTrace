@@ -1,0 +1,22 @@
+name: macOS checks
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: macos-14
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Audit published sources
+        run: python3 scripts/audit.py --tracked
+      - name: Test publishing audit
+        run: python3 scripts/test_audit.py
+      - name: Run offline tests
+        run: ./测试.command
+      - name: Build universal app
+        run: ./构建.command

@@ -16,6 +16,6 @@ Alibaba Cloud Model Studio and DeepSeek are external, separately operated servic
 
 ## Design references
 
-UI UX Pro Max was consulted as design guidance during development; its skill package and scripts are not bundled in this repository. No onetake library or code is included. No license for those separate projects is purportedly changed by this repository's MIT License.
+frontend-design, UI UX Pro Max, shadcn/ui, daisyUI, and Humbleteam design-review were consulted as design guidance. Their skill packages and scripts are not bundled in this repository; no React/Tailwind/shadcn/daisyUI runtime code is included. No onetake library or code is included. No license for those separate projects is purportedly changed by this repository's MIT License.
 
-UI UX Pro Max仅作为设计方法参考，其技能包与脚本未纳入本仓库。onetake代码未纳入本项目，MIT协议不改变外部项目自身许可。
+上述技能仅作为设计方法参考，其技能包与脚本未纳入本仓库；界面实现仍为原生SwiftUI/AppKit。onetake代码未纳入本项目，MIT协议不改变外部项目自身许可。

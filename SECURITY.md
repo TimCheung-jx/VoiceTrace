@@ -9,10 +9,12 @@ Please do not include API keys, signing identities, real audio, transcripts, or 
 - Keychain: provider credentials; application preferences: non-secret model profiles.
 - Local Documents/VoiceTrace folder: meeting text and audio; not additionally encrypted.
 - Cloud speech provider: audio during live or post-meeting recognition.
-- Configured text provider: transcript text when the user requests summaries or questions.
+- Configured text provider: confirmed transcript chunks and intermediate summaries during enabled periodic/final processing, or when the user requests summaries or questions. Periodic summaries (30 seconds) and final summaries are enabled by default and can be disabled independently in Settings → Recording & Summaries.
 - System sharing: recipient selection and final sending are controlled by the user.
 
-清洁版不迁移个人版密钥、偏好设置或会议资料。仓库排除本地数据、构建产物、缓存和常见凭据文件。
+清洁版默认构建不迁移个人版密钥、偏好设置或会议资料。仓库排除本地数据、构建产物、缓存和常见凭据文件。源码中的可选 PERSONAL_BUILD 兼容分支不含任何密钥或真实Workspace ID，默认构建和CI均不启用。
+
+录音中的定时整理及结束后整理默认开启，可以在“设置→录音与整理”分别关闭。开启时，已确认的逐字稿片段和中间摘要会发送至配置的整理服务商。修订历史、缓存、AI建议及最近删除也属于本机资料；需要额外加密或禁止云同步的用户应自行管理资料目录及系统设置。
 
 ## Checks / 检查
 

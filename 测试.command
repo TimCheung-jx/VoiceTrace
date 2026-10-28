@@ -21,3 +21,12 @@ modelSources=()
 for name in Protocol Summary Configurations MemoryCredentials Services Audio Model Sharing Demo; do modelSources+=("$testDir/$name.swift"); done
 swiftc "${common[@]}" "${modelSources[@]}" "$testDir/ModelTests.swift" -framework SwiftUI -framework AppKit -framework AVFoundation -framework PDFKit -framework Security -framework LocalAuthentication -o "$testDir/check-model"
 "$testDir/check-model"
+
+swiftc "${common[@]}" "${modelSources[@]}" "$testDir/ScenarioTests.swift" -framework SwiftUI -framework AppKit -framework AVFoundation -framework PDFKit -framework Security -framework LocalAuthentication -o "$testDir/check-scenarios"
+"$testDir/check-scenarios"
+
+swiftc "${common[@]}" -D PERSONAL_BUILD "${core[@]}" "$testDir/Configurations.swift" "$testDir/PersonalConfigTests.swift" -o "$testDir/check-personal"
+"$testDir/check-personal"
+
+swiftc "${common[@]}" "$testDir/Styles.swift" "$testDir/DesignTests.swift" -framework SwiftUI -framework AppKit -o "$testDir/check-design"
+"$testDir/check-design"

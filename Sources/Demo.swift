@@ -68,11 +68,12 @@ extension Workspace {
  static func prepare(_ w:Workspace){
   guard !prepared else{return};prepared=true
   w.meeting=DemoMeeting.make();w.history=[w.meeting];w.tab=ProcessInfo.processInfo.environment["VOICETRACE_QA_TAB"] ?? "AI纪要";w.status="虚构会议 · 原生Mac界面检查"
-  w.modelSettings=SettingsFile.fresh()
+  w.modelSettings=SettingsFile.fresh();w.theme=ProcessInfo.processInfo.environment["VOICETRACE_QA_THEME"] ?? "燕麦森林"
+  if ProcessInfo.processInfo.environment["VOICETRACE_QA_SCENE"]=="library"{w.allMeetings=true;w.paused=true;w.meeting.captureState="已暂停"}
   guard let output=ProcessInfo.processInfo.environment["VOICETRACE_QA_SCREENSHOT"] else{return}
   DispatchQueue.main.asyncAfter(deadline:.now()+1.5){
    guard let window=NSApp.windows.first(where:{$0.contentView != nil}),let view=window.contentView else{return}
-   window.setContentSize(NSSize(width:1440,height:960));window.makeFirstResponder(nil);window.layoutIfNeeded()
+   window.setContentSize(NSSize(width:Double(ProcessInfo.processInfo.environment["VOICETRACE_QA_WIDTH"] ?? "1440") ?? 1440,height:820));window.makeFirstResponder(nil);window.layoutIfNeeded()
    DispatchQueue.main.asyncAfter(deadline:.now()+0.5){
     guard let rep=view.bitmapImageRepForCachingDisplay(in:view.bounds) else{return};view.cacheDisplay(in:view.bounds,to:rep)
     if let data=rep.representation(using:.png,properties:[:]){try? data.write(to:URL(fileURLWithPath:output))}

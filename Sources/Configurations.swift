@@ -1,5 +1,16 @@
 import Foundation
 import CryptoKit
+enum AppIdentity {
+ #if PERSONAL_BUILD
+ static let keychainService="com.tim.tingjian"
+ static let dataDirectory="听见会议资料"
+ static let personal=true
+ #else
+ static let keychainService="org.voicetrace.app"
+ static let dataDirectory="VoiceTrace"
+ static let personal=false
+ #endif
+}
 struct SpeechProfile: Codable, Identifiable, Equatable {
  var id=UUID().uuidString
  var name="百炼语音配置"
@@ -7,8 +18,14 @@ struct SpeechProfile: Codable, Identifiable, Equatable {
  var workspace=""
  var realtimeModel="fun-asr-realtime"
  var fileModel="fun-asr"
+ var legacyScope:String?=nil
  var scope:String {region+":"+workspace}
- var keyAccount:String {"speech."+id+"."+SettingsFile.digest(scope)}
+ var keyAccount:String {
+  #if PERSONAL_BUILD
+  if legacyScope==scope{return "aliyun"}
+  #endif
+  return "speech."+id+"."+SettingsFile.digest(scope)
+ }
  var host:String {"\(workspace).\(region).maas.aliyuncs.com"}
  var uploadHost:String {region=="ap-southeast-1" ? "dashscope-intl.aliyuncs.com":"dashscope.aliyuncs.com"}
  func validated() throws -> Self {
@@ -30,7 +47,13 @@ struct TextProfile: Codable, Identifiable, Equatable {
  var provider="deepseek"
  var baseURL="https://api.deepseek.com"
  var model="deepseek-flash"
- var keyAccount:String {"text."+id+"."+SettingsFile.digest(baseURL)}
+ var legacyScope:String?=nil
+ var keyAccount:String {
+  #if PERSONAL_BUILD
+  if legacyScope==baseURL{return "deepseek"}
+  #endif
+  return "text."+id+"."+SettingsFile.digest(baseURL)
+ }
  var chatURL:String {baseURL+"/chat/completions"}
  func validated() throws -> Self {
   var value=self;value.name=name.trimmingCharacters(in:.whitespacesAndNewlines);value.model=model.trimmingCharacters(in:.whitespacesAndNewlines)
@@ -56,6 +79,13 @@ struct SettingsFile: Codable, Equatable {
  }
  static func load(_ defaults:UserDefaults)->Self {
   if let data=defaults.data(forKey:"modelSettingsV1"),let saved=try? JSONDecoder().decode(Self.self,from:data),!saved.speech.isEmpty,!saved.texts.isEmpty{return saved}
+  #if PERSONAL_BUILD
+  if let workspace=defaults.string(forKey:"workspace"),Wire.validateWorkspace(workspace){
+   var speech=SpeechProfile();speech.id="legacy-speech";speech.workspace=workspace;speech.realtimeModel=defaults.string(forKey:"realtimeModel") ?? speech.realtimeModel;speech.legacyScope=speech.scope
+   var text=TextProfile();text.id="legacy-text";text.model=defaults.string(forKey:"deepModel") ?? text.model;text.legacyScope=text.baseURL
+   return Self(speech:[speech],texts:[text],speechID:speech.id,textID:text.id)
+  }
+  #endif
   return fresh()
  }
  func save(_ defaults:UserDefaults) throws {defaults.set(try JSONEncoder().encode(self),forKey:"modelSettingsV1")}

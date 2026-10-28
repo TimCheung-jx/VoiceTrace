@@ -59,6 +59,7 @@ enum ConnectionDiagnostics {
   let code=(error as NSError).code
   if let url=error as? URLError {
    switch url.code {
+   case .cannotConnectToHost:return message+"无法连接百炼服务器（-1004）。请检查网络、代理及地域连接地址；尚不能据此判断密钥错误。"
    case .cannotFindHost,.dnsLookupFailed:return message+"无法解析服务域名，请核对Workspace ID、地域及网络DNS。"
    case .notConnectedToInternet,.networkConnectionLost:return message+"网络未连接或连接已中断。"
    case .timedOut:return message+"连接超时，请检查网络或代理设置。"
@@ -71,5 +72,82 @@ enum ConnectionDiagnostics {
  static func server(_ header:[String:Any])->String {
   let code=safeCode(header["error_code"] as? String) ?? "未提供安全可显示的错误码"
   return "百炼任务失败（\(code)）。请核对地域、模型权限、余额及请求配置。"
+ }
+}
+
+// 定长原文块+有界分层归并。未变化的块和归并节点按内容指纹复用。
+import CryptoKit
+extension SummaryBundle {
+ var fields:[String:String]{["summary":summary,"tree":tree,"disagreements":disagreements,"chapters":chapters,"todos":todos]}
+ static func from(_ fields:[String:String]) throws -> Self {try parse(String(decoding:Wire.json(fields),as:UTF8.self))}
+}
+struct SummaryRun {let bundle:SummaryBundle;let cache:[SummaryCache];let parts:[SummaryBundle]}
+enum SummaryPipeline {
+ static let sourceLimit=10000
+ static let resultLimit=4000
+ static func chunks(_ text:String,limit:Int=sourceLimit)->[String]{
+  guard limit>0 else{return []};var parts:[String]=[];var current=""
+  for line in text.components(separatedBy:"\n"){
+   var remaining=line
+   while remaining.count>limit{
+    if !current.isEmpty{parts.append(current);current=""}
+    let cut=remaining.index(remaining.startIndex,offsetBy:limit);parts.append(String(remaining[..<cut]));remaining=String(remaining[cut...])
+   }
+   if current.count+remaining.count+1>limit{parts.append(current);current=""}
+   if !remaining.isEmpty{current += (current.isEmpty ? "":"\n")+remaining}
+  }
+  if !current.isEmpty{parts.append(current)};return parts
+ }
+ static func digest(_ text:String)->String{SHA256.hash(data:Data(text.utf8)).map{String(format:"%02x",$0)}.joined()}
+ static func run(text:String,scope:String,cache:[SummaryCache],final:Bool,
+  call:(String,String) async throws -> SummaryBundle,
+  progress:([SummaryCache],String)->Void) async throws -> SummaryRun {
+  let pieces=chunks(text);guard !pieces.isEmpty else{throw AppError("暂无可整理的逐字稿")}
+  var lookup=Dictionary(cache.map{($0.key,$0.fields)},uniquingKeysWith:{$1})
+  var used:[SummaryCache]=[]
+  func resolve(_ source:String,kind:String) async throws -> SummaryBundle {
+   try Task.checkCancellation()
+   let key=digest("v2|"+scope+"|"+kind+"|"+source)
+   if !(final && kind=="最终核对"),let fields=lookup[key]{let value=try SummaryBundle.from(fields);if value.fields.values.reduce(0,{$0+$1.count})<=resultLimit{used.append(SummaryCache(key:key,fields:fields));return value}}
+   let instruction=SummaryBundle.prompt+"\n本次输入为"+(kind=="原文" ? "有时间标记的逐字稿片段":"已按原文整理的分段摘要，请去重归并，保留已有出处，不新增事实")+"。五个字段各尽量控制在600字以内，总计不得超过4000字符。保留决定、分歧、待办与关键时间。"+(final ? "用于最终整理，但原文未形成结论的事项仍写待确认。":"会议仍在进行，结果为草稿。")
+   var value=try await call(source,instruction)
+   if value.fields.values.reduce(0,{$0+$1.count})>resultLimit{value=try await call(source,instruction+"\n上次输出过长，本次必须精简到总计4000字符以内。")}
+   guard value.fields.values.reduce(0,{$0+$1.count})<=resultLimit else{throw AppError("模型输出过长，已保留已有整理；请重试或更换模型")}
+   try Task.checkCancellation()
+   lookup[key]=value.fields;used.append(SummaryCache(key:key,fields:value.fields))
+   progress(Array(lookup.map{SummaryCache(key:$0.key,fields:$0.value)}).suffix(512).map{$0},kind)
+   return value
+  }
+  var layer:[SummaryBundle]=[]
+  for (i,piece) in pieces.enumerated(){progress(Array(lookup.map{SummaryCache(key:$0.key,fields:$0.value)}),"原文分段 \(i+1)/\(pieces.count)");layer.append(try await resolve(piece,kind:"原文"))}
+  let parts=layer
+  while layer.count>1{
+   var next:[SummaryBundle]=[]
+   // 两个至多4000字符的摘要，加JSON字段后仍为有界输入。
+   for index in stride(from:0,to:layer.count,by:2){
+    if index+1==layer.count{next.append(layer[index]);continue}
+    let source=String(decoding:try Wire.json(["前段":layer[index].fields,"后段":layer[index+1].fields]),as:UTF8.self)
+    next.append(try await resolve(source,kind:"归并"))
+   };layer=next
+  }
+  let result:SummaryBundle
+  if final{let source=String(decoding:try Wire.json(layer[0].fields),as:UTF8.self);result=try await resolve(source,kind:"最终核对")}else{result=layer[0]}
+  return SummaryRun(bundle:result,cache:used,parts:parts)
+ }
+}
+
+struct QuestionContext {
+ let text:String
+ let partial:Bool
+ static func select(transcript:String,question:String,overview:String)->Self{
+  guard transcript.count>30000 else{return Self(text:transcript,partial:false)}
+  let query=Array(question.lowercased().filter{!$0.isWhitespace && !$0.isPunctuation})
+  var terms=Set<String>();if query.count>1{for i in 0..<(query.count-1){terms.insert(String(query[i...i+1]))}}
+  let chunks=SummaryPipeline.chunks(transcript)
+  var scored:[(Int,Int)]=[]
+  for (index,text) in chunks.enumerated(){let lower=text.lowercased();var score=0;for term in terms{if lower.contains(term){score+=1}};scored.append((index,score))}
+  scored.sort{left,right in if left.1==right.1{return left.0<right.0};return left.1>right.1}
+  let selected=scored.prefix(3).map{$0.0}.sorted().map{chunks[$0]}.joined(separator:"\n\n")
+  return Self(text:"会议总览（可能包含人工修订）：\n"+String(overview.prefix(6000))+"\n\n检索的原文片段：\n"+selected,partial:true)
  }
 }

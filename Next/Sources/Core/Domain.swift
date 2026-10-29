@@ -212,11 +212,16 @@ struct VTDocument: Codable, Identifiable, Equatable {
           }.joined(separator: "\n") + "\n" + d.outcome + "\n" + refs(d.sourceIDs)
       }.joined(separator: "\n\n")
     case .tasks:
-      return analysis.tasks.map {
-        (completed.contains($0.id) ? "[x] " : "[ ] ") + $0.title + "\n" + $0.detail + "\n负责人："
-          + ($0.ownerID == nil ? "待确认" : speaker($0.ownerID)) + "；期限：" + ($0.deadline ?? "待确认")
-          + "\n" + refs($0.sourceIDs)
-      }.joined(separator: "\n\n")
+      // 分开确定可选值及各行，避免旧Swift编译器对长字符串表达式求解超时。
+      let rows: [String] = analysis.tasks.map { task -> String in
+        let mark = completed.contains(task.id) ? "[x] " : "[ ] "
+        let owner = task.ownerID == nil ? "待确认" : speaker(task.ownerID)
+        let deadline = task.deadline ?? "待确认"
+        let heading = mark + task.title
+        let attribution = "负责人：\(owner)；期限：\(deadline)"
+        return [heading, task.detail, attribution, refs(task.sourceIDs)].joined(separator: "\n")
+      }
+      return rows.joined(separator: "\n\n")
     case .chapters:
       return analysis.chapters.map { $0.title + "\n" + $0.detail + "\n" + refs($0.sourceIDs) }
         .joined(separator: "\n\n")

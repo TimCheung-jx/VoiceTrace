@@ -2,10 +2,11 @@ import Foundation
 struct AppError: LocalizedError { let message: String; var errorDescription: String? { message }; init(_ message: String) { self.message = message } }
 struct Sentence: Codable, Identifiable { var id = UUID().uuidString; var start: Double; var end: Double; var text: String; var speaker: String = "待区分发言人" }
 struct Recording: Codable, Identifiable { var id = UUID().uuidString; var path: String; var offset: Double; var duration: Double }
-struct Meeting: Codable, Identifiable { var id = UUID().uuidString; var title = "新会议"; var created = Date(); var sentences: [Sentence] = []; var recordings: [Recording] = []; var notes = ""; var summary = ""; var chapters = ""; var tree = ""; var todos = ""; var disagreements:String? = nil; var captureState:String? = nil; var summaryState:String? = nil; var summaryUpdated:Date? = nil; var summaryThrough:Double? = nil; var summaryModel:String? = nil; var summaryCache:[SummaryCache]? = nil; var protectedSections:[String]? = nil; var aiSuggestion:[String:String]? = nil; var transcriptEdited:Bool? = nil; var segmentSummaries:[[String:String]]? = nil }
+struct Meeting: Codable, Identifiable { var id = UUID().uuidString; var title = "新会议"; var created = Date(); var sentences: [Sentence] = []; var recordings: [Recording] = []; var notes = ""; var summary = ""; var chapters = ""; var tree = ""; var todos = ""; var disagreements:String? = nil; var captureState:String? = nil; var summaryState:String? = nil; var summaryUpdated:Date? = nil; var summaryThrough:Double? = nil; var summaryModel:String? = nil; var summaryCache:[SummaryCache]? = nil; var protectedSections:[String]? = nil; var aiSuggestion:[String:String]? = nil; var transcriptEdited:Bool? = nil; var completedTasks:[String]? = nil; var segmentSummaries:[[String:String]]? = nil }
 enum Wire {
- static func command(_ action: String, id: String, model: String = "fun-asr-realtime") -> [String: Any] {
-  let payload: [String: Any] = action == "run-task" ? ["task_group":"audio", "task":"asr", "function":"recognition", "model":model, "parameters":["format":"pcm", "sample_rate":16000, "language_hints":["zh"], "heartbeat":true], "input":[:]] : ["input":[:]]
+ static func command(_ action: String, id: String, model: String = "fun-asr-realtime", parameters:[String:Any] = [:]) -> [String: Any] {
+  let defaults:[String:Any] = ["format":"pcm", "sample_rate":16000, "language_hints":["zh"], "heartbeat":true]
+  let payload: [String: Any] = action == "run-task" ? ["task_group":"audio", "task":"asr", "function":"recognition", "model":model, "parameters":defaults.merging(parameters){_,new in new}, "input":[:]] : ["input":[:]]
   return ["header":["action":action,"task_id":id,"streaming":"duplex"],"payload":payload]
  }
  static func json(_ object: Any) throws -> Data { try JSONSerialization.data(withJSONObject: object, options: [.sortedKeys]) }
@@ -80,5 +81,29 @@ enum MeetingDisk {
   try FileManager.default.setAttributes([.posixPermissions:0o700],ofItemAtPath:folder.path)
   let encoder=JSONEncoder();encoder.outputFormatting=[.prettyPrinted,.sortedKeys]
   try encoder.encode(meeting).write(to:folder.appendingPathComponent("meeting.json"),options:.atomic)
+ }
+}
+
+// 五个页面共享可校验的内容节点；文字快照仍可读取旧版本存档。
+struct AnalysisNode:Codable,Identifiable,Equatable {
+ var title:String
+ var body:String
+ var speaker:String? = nil
+ var times:[Double]
+ var kind:String? = nil
+ var owner:String? = nil
+ var deadline:String? = nil
+ var children:[AnalysisNode]? = nil
+ var id:String { title+"|"+times.map{String($0)}.joined(separator:",") }
+ static func decode(_ text:String)->[Self]? {try? JSONDecoder().decode([Self].self,from:Data(text.utf8))}
+ static func encode(_ nodes:[Self])->String {String(decoding:(try? JSONEncoder().encode(nodes)) ?? Data(),as:UTF8.self)}
+ static func plain(_ text:String)->String {
+  guard let nodes=decode(text) else{return text}
+  func lines(_ nodes:[Self],_ level:Int)->String {nodes.map{n in
+   let heading=String(repeating:"  ",count:level)+(level==0 ? "## ":"• ")+n.title
+   let label=[n.kind,n.speaker,n.owner.map{"负责人："+$0},n.deadline.map{"期限："+$0}].compactMap{$0}.filter{!$0.isEmpty}.joined(separator:" · ")
+   let refs=n.times.map{"["+Wire.time($0)+"]"}.joined(separator:" ")
+   return heading+"\n"+label+(label.isEmpty ? "":"\n")+n.body+" "+refs+(n.children?.isEmpty==false ? "\n"+lines(n.children!,level+1):"")
+  }.joined(separator:"\n\n")};return lines(nodes,0)
  }
 }

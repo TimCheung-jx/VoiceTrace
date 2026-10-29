@@ -18,6 +18,8 @@ struct SpeechProfile: Codable, Identifiable, Equatable {
  var workspace=""
  var realtimeModel="fun-asr-realtime"
  var fileModel="fun-asr"
+ var sentenceSilence:Int? = nil
+ var quietSpeech:Bool? = nil
  var legacyScope:String?=nil
  var scope:String {region+":"+workspace}
  var keyAccount:String {
@@ -38,6 +40,7 @@ struct SpeechProfile: Codable, Identifiable, Equatable {
   guard ["cn-beijing","ap-southeast-1"].contains(region) else{throw AppError("当前支持百炼北京和新加坡地域")}
   guard value.realtimeModel=="fun-asr-realtime" || value.realtimeModel.hasPrefix("fun-asr-realtime-") else{throw AppError("实时识别目前支持Fun-ASR-Realtime协议，请填写fun-asr-realtime或其对应版本名")}
   guard ["fun-asr","paraformer-v2","qwen-audio-3.0-asr-flash-filetrans"].contains(value.fileModel) else{throw AppError("请选择当前已适配的会后识别模型")}
+  guard [600,800,1300].contains(value.sentenceSilence ?? 800) else{throw AppError("请选择有效的断句速度")}
   return value
  }
 }

@@ -16,6 +16,10 @@ import PDFKit
   let back=try NSAttributedString(data:word,options:[.documentType:NSAttributedString.DocumentType.officeOpenXML],documentAttributes:nil);precondition(back.string.contains("第90条"))
   let tree=ContentSnapshot(meeting:"虚构项目测试会议",section:"思维链",body:"试点计划\n  负责人：先开展电脑端试点。[00:00]\n  研发：接口稳定性尚待验证。[01:00]\n交付安排\n  设计：周三提供方案。\n  待确认：正式上线日期与验收指标。")
   let png=try ContentWriter.data(tree,format:.png);try png.write(to:folder.appendingPathComponent("tree.png"));precondition(NSBitmapImageRep(data:png)!.pixelsWide==1200)
+  var structured=tree
+  structured.nodes=[AnalysisNode(title:"试点",body:"先试点",times:[0],children:[AnalysisNode(title:"观点",body:"先验证接口",speaker:"研发",times:[60])])]
+  let graph=try ContentWriter.data(structured,format:.png)
+  precondition(NSBitmapImageRep(data:graph)!.pixelsHigh>200 && structured.withTimestamps(false).nodes![0].times.isEmpty)
   let safe=ContentWriter.filename(ContentSnapshot(meeting:"A/B:C",section:"笔记",body:"x"),format:.text);precondition(!safe.contains("/") && safe.hasSuffix(".txt"))
   do{_=try ContentWriter.data(ContentSnapshot(meeting:"x",section:"笔记",body:""),format:.pdf);preconditionFailure("应拒绝空内容")}catch{}
   print("通过：时间开关、完整文字、多页PDF及末页内容、DOCX往返、思维链PNG、文件名及空内容校验。PDF共\(pdf.pageCount)页。")

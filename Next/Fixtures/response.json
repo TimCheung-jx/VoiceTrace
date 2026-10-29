@@ -1,0 +1,21 @@
+{
+ "graph":{"nodes":[
+  {"id":"scope","kind":"topic","title":"试点范围","detail":"首轮应该包含哪些使用场景？","speakerID":null,"sourceIDs":["u1","u2"]},
+  {"id":"broad","kind":"position","title":"同时覆盖电脑与手机","detail":"林悦建议第一轮同时覆盖电脑与手机，方便了解跨设备使用情况。","speakerID":"lin","sourceIDs":["u1"]},
+  {"id":"narrow","kind":"position","title":"先完成电脑端试点","detail":"周衡反对同时铺开，建议先解决同步稳定性。","speakerID":"zhou","sourceIDs":["u2"]},
+  {"id":"risk","kind":"reason","title":"同步能力尚未验证","detail":"电脑与手机之间的同步还没有经过验证。","speakerID":"zhou","sourceIDs":["u2"]},
+  {"id":"decided","kind":"decision","title":"首轮仅覆盖电脑端","detail":"陈宁确认先做电脑端，手机端范围留待验证结果。","speakerID":"chen","sourceIDs":["u3"]},
+  {"id":"launch","kind":"topic","title":"上线条件与验收","detail":"试点与正式上线需要分别确认。","speakerID":null,"sourceIDs":["u4","u5","u6"]},
+  {"id":"verify","kind":"position","title":"先验证，再确定上线日期","detail":"周衡承诺周五提交验证报告，目前不能承诺上线日期。","speakerID":"zhou","sourceIDs":["u4"]},
+  {"id":"metrics","kind":"open","title":"验收指标待确认","detail":"有人询问验收指标，原文无法识别该发言人的身份。","speakerID":null,"sourceIDs":["u5"]},
+  {"id":"draft","kind":"response","title":"先提供验收草案","detail":"林悦周三提供验收草案，具体指标下次确认。","speakerID":"lin","sourceIDs":["u6"]}
+ ],"edges":[{"from":"scope","to":"broad","relation":"建议"},{"from":"scope","to":"narrow","relation":"反对扩大范围"},{"from":"narrow","to":"risk","relation":"理由"},{"from":"scope","to":"decided","relation":"决定"},{"from":"launch","to":"verify","relation":"执行条件"},{"from":"launch","to":"metrics","relation":"待确认"},{"from":"metrics","to":"draft","relation":"回应"}]},
+ "minutes":[
+  {"id":"m1","category":"背景","title":"确认首轮试点范围","detail":"讨论电脑端、手机端的试点覆盖范围。","sourceIDs":["u1","u2"]},
+  {"id":"m2","category":"决定","title":"首轮仅做电脑端","detail":"先完成电脑端试点；手机端范围和正式上线日期尚未确定。","sourceIDs":["u3","u4"]},
+  {"id":"m3","category":"待确认","title":"验收指标","detail":"先拟定草案，具体指标下次确认。","sourceIDs":["u5","u6"]}
+ ],
+ "disputes":[{"id":"d1","title":"首轮是否同时覆盖手机端","category":"明确意见冲突","positionIDs":["broad","narrow"],"outcome":"已决定先做电脑端，手机端待验证后再定。","sourceIDs":["u1","u2","u3"]}],
+ "tasks":[{"id":"a1","title":"提交同步验证报告","detail":"为确定后续范围和上线条件提供依据。","ownerID":"zhou","deadline":"周五","category":"明确任务","sourceIDs":["u4"]},{"id":"a2","title":"提供验收标准草案","detail":"具体指标留待下次确认。","ownerID":"lin","deadline":"周三","category":"明确任务","sourceIDs":["u6"]}],
+ "chapters":[{"id":"c1","title":"试点范围与分歧","detail":"比较全端试点与电脑端优先两种主张，确认首轮范围。","sourceIDs":["u1","u2","u3"]},{"id":"c2","title":"验证与验收安排","detail":"确定验证报告和验收草案的交付安排，保留未确认事项。","sourceIDs":["u4","u5","u6"]}]
+}

@@ -11,16 +11,20 @@ struct DocumentPane:View {
   Group {
    if w.tab=="笔记" {notes}
    else if w.tab=="转写" {transcription}
+   else if let nodes=AnalysisNode.decode(w.rawSection) {ScrollView{AnalysisPage(w:w,nodes:nodes,p:p)}}
    else if w.sectionSnapshot.body.isEmpty {emptySection}
    else {ScrollView{VStack(alignment:.leading,spacing:22){
     Text(sectionTitle).font(.system(size:21,weight:.semibold)).padding(.bottom,2)
     if w.tab=="分歧点"{Text("根据会议原文归纳；执行条件和待确认信息不自动等于意见冲突。").font(.callout).foregroundStyle(p.muted)}
     if w.tab=="思维链"{Text("会议讨论脉络：议题、观点、理由、回应与结论。").font(.callout).foregroundStyle(p.muted)}
+    Text("此页为旧版文字或人工修订；更新整理可生成可视化条目，受保护的页面需先解除保护。").font(.caption).foregroundStyle(p.muted)
     DocumentBlocks(text:w.sectionSnapshot.body,p:p,open:{w.revealSource($0)})
     Text("AI整理内容请对照原文核实，点击时间标记可以回听。").font(.caption).foregroundStyle(p.muted)
    }.padding(.top,14).padding(.bottom,32).padding(.horizontal,10).frame(maxWidth:760,alignment:.leading).frame(maxWidth:.infinity)}}
   }.sheet(item:$editingSentence){sentence in SentenceEditor(w:w,sentence:sentence)}.id(w.tab).transition(.opacity).animation(reduceMotion || !motionEnabled ? nil:.easeOut(duration:0.14),value:w.tab)
  }
+ private func speakerIndex(_ label:String)->Int {var labels:[String]=[];for sentence in w.meeting.sentences where !labels.contains(sentence.speaker){labels.append(sentence.speaker)};return labels.firstIndex(of:label) ?? 0}
+ private func speakerColor(_ label:String)->Color {let colors=["065F46","3E5B8B","90536C","6C6130"];return Palette.hex(colors[speakerIndex(label)%colors.count])}
  private var sectionTitle:String {w.tab=="AI纪要" ? "会议纪要":w.tab}
  private var notes:some View {
   VStack(alignment:.leading,spacing:14){
@@ -40,7 +44,7 @@ struct DocumentPane:View {
     if w.meeting.sentences.isEmpty && w.partial.isEmpty {emptySection}
     ForEach(w.meeting.sentences){s in
      VStack(alignment:.leading,spacing:10){
-      HStack(spacing:9){Image(systemName:"person.crop.circle").foregroundStyle(p.actionText);Text(s.speaker).foregroundStyle(p.muted);Button("纠错"){editingSentence=s}.disabled(w.busy);Button(Wire.time(s.start)){w.play(s.start)}.foregroundStyle(p.actionText).buttonStyle(.borderless)}.font(.system(size:12))
+      HStack(spacing:9){Text(s.speaker.contains("区分") ? "?":String(speakerIndex(s.speaker)+1)).font(.system(size:12,weight:.semibold)).foregroundStyle(speakerColor(s.speaker)).frame(width:30,height:30).background(speakerColor(s.speaker).opacity(0.1)).clipShape(RoundedRectangle(cornerRadius:8));Text(s.speaker).foregroundStyle(p.muted);Button("纠错"){editingSentence=s}.disabled(w.busy);Button(Wire.time(s.start)){w.play(s.start)}.foregroundStyle(p.actionText).buttonStyle(.borderless)}.font(.system(size:12))
       Text(s.text).font(.system(size:15)).lineSpacing(7).textSelection(.enabled).fixedSize(horizontal:false,vertical:true)
      }.padding(.vertical,20).padding(.horizontal,12).frame(maxWidth:.infinity,alignment:.leading).background(w.highlightedSentence==s.id ? p.hero:Color.clear).clipShape(RoundedRectangle(cornerRadius:8)).overlay(alignment:.bottom){p.ink.opacity(0.08).frame(height:1)}.id(s.id)
     }
@@ -65,7 +69,7 @@ struct DocumentBlocks:View {
  let text:String
  let p:Palette
  let open:(Double)->Void
- private var blocks:[String]{text.components(separatedBy:"\n\n").map{$0.trimmingCharacters(in:.whitespacesAndNewlines)}.filter{!$0.isEmpty}}
+ private var blocks:[String]{text.replacingOccurrences(of:"；",with:"；\n\n").components(separatedBy:"\n\n").map{$0.trimmingCharacters(in:.whitespacesAndNewlines)}.filter{!$0.isEmpty}}
  var body:some View {
   VStack(alignment:.leading,spacing:21){ForEach(Array(blocks.enumerated()),id:\.offset){i,block in
    VStack(alignment:.leading,spacing:9){
@@ -76,7 +80,7 @@ struct DocumentBlocks:View {
     }
     let references=SourceReference.extract(block)
     if !references.isEmpty{ScrollView(.horizontal,showsIndicators:false){HStack(spacing:8){ForEach(references){ref in Button{open(ref.seconds)}label:{Label(ref.label,systemImage:"arrow.up.right").font(.system(size:11)).padding(.horizontal,7).padding(.vertical,4).foregroundStyle(p.actionText).background(p.accent.opacity(0.07)).clipShape(RoundedRectangle(cornerRadius:5))}.buttonStyle(.plain).accessibilityLabel("查看"+ref.label+"的原文")}}}}
-   }.frame(maxWidth:.infinity,alignment:.leading).padding(i==0 ? 17:0).background(i==0 ? p.hero.opacity(0.7):Color.clear).clipShape(RoundedRectangle(cornerRadius:8))
+   }.frame(maxWidth:.infinity,alignment:.leading).padding(.vertical,8).background(Color.clear).clipShape(RoundedRectangle(cornerRadius:8))
   }}
  }
 }

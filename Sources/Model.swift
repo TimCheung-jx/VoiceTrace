@@ -244,7 +244,13 @@ import AppKit
    do {
     let run=try await SummaryPipeline.run(text:snapshot,scope:selected.text.id+"|"+selected.text.baseURL+"|"+selected.deepModel,cache:cached,final:isFinal,call:{source,instruction in
      if let service=self.summaryService{return try await service(source,isFinal)}
-     return try SummaryBundle.parse(await Cloud(config:selected).chat(text:source,question:instruction,key:key))
+     let raw=try await Cloud(config:selected).chat(text:source,question:instruction,key:key)
+     do{return try SummaryBundle.validated(raw,transcript:snapshot)}catch{
+      try Task.checkCancellation()
+      self.liveStatus="正在修正整理格式，旧结果已保留…"
+      let repaired=try await Cloud(config:selected).chat(text:source,question:instruction+"\n请重新核对：五个字段必须是完整节点数组，不能为字符串；每个节点含title/body/times，发言人及任务负责人、期限须有对应时间原文的文字依据。",key:key)
+      return try SummaryBundle.validated(repaired,transcript:snapshot)
+     }
     },progress:{cache,stage in
      guard self.meeting.id==id,!Task.isCancelled else{return}
      self.meeting.summaryCache=cache;self.liveStatus=(isFinal ? "最终整理 · ":"实时草稿 · ")+stage;self.schedulePersist()
@@ -263,6 +269,12 @@ import AppKit
   meeting.aiSuggestion=bundle.fields
   for (section,key) in Self.sectionKeys where !(meeting.protectedSections ?? []).contains(section){setSection(section,bundle.fields[key] ?? "")}
  }
+ func toggleTask(_ id:String){
+  var ids=meeting.completedTasks ?? []
+  if ids.contains(id){ids.removeAll{$0==id}}else{ids.append(id)}
+  meeting.completedTasks=ids;persist()
+ }
+ var rawSection:String {switch tab{case "AI纪要":return meeting.summary;case "思维链":return meeting.tree;case "分歧点":return meeting.disagreements ?? "";case "章节":return meeting.chapters;case "待办":return meeting.todos;default:return ""}}
  static let sectionKeys=["AI纪要":"summary","思维链":"tree","分歧点":"disagreements","章节":"chapters","待办":"todos"]
  func setSection(_ section:String,_ text:String){switch section{case "AI纪要":meeting.summary=text;case "思维链":meeting.tree=text;case "分歧点":meeting.disagreements=text;case "章节":meeting.chapters=text;case "待办":meeting.todos=text;case "笔记":meeting.notes=text;default:break}}
  @discardableResult func archiveText(_ reason:String)->Bool{

@@ -95,7 +95,7 @@ struct Workbench:View {
    Spacer(minLength:0)
    Button{w.settingsPage="外观";w.settings=true}label:{HStack{Label("设置",systemImage:"gearshape");Spacer();Text("⌘ ,").font(.system(size:12))}}.buttonStyle(QuietButton(tint:p.ink))
    Button{w.persist();NSWorkspace.shared.open(w.root)}label:{Label("本机资料",systemImage:"folder")}.buttonStyle(QuietButton(tint:p.muted))
-   Text(AppIdentity.personal ? "个人版 0.9.0":"VoiceTrace 0.9.0").font(.system(size:12)).foregroundStyle(p.muted).padding(.horizontal,12)
+   Text(AppIdentity.personal ? "个人版 0.10.0":"VoiceTrace 0.10.0").font(.system(size:12)).foregroundStyle(p.muted).padding(.horizontal,12)
   }.padding(.horizontal,14).padding(.top,22).padding(.bottom,16).frame(width:212).background(p.side).overlay(alignment:.trailing){p.border.frame(width:0.5)}
  }
  private func rename(_ item:Meeting){let panel=NSAlert();panel.messageText="重命名会议";let field=NSTextField(string:item.title);field.frame=NSRect(x:0,y:0,width:320,height:26);panel.accessoryView=field;panel.addButton(withTitle:"保存");panel.addButton(withTitle:"取消");if panel.runModal() == .alertFirstButtonReturn{w.renameMeeting(item,title:field.stringValue)}}

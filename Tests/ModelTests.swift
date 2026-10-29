@@ -8,7 +8,9 @@ import Darwin
   w.persist();precondition(w.history.isEmpty)
   w.loadDemo();precondition(w.meeting.title.contains("虚构") && !w.history.isEmpty)
   let expected:[String:String]=["转写":w.transcript,"笔记":w.meeting.notes,"AI纪要":w.meeting.summary,"思维链":w.meeting.tree,"分歧点":w.meeting.disagreements!,"章节":w.meeting.chapters,"待办":w.meeting.todos]
-  for (tab,body) in expected {w.tab=tab;precondition(w.sectionSnapshot.body==body && !body.isEmpty)}
+  for (tab,body) in expected {w.tab=tab;precondition(w.sectionSnapshot.body==AnalysisNode.plain(body) && !body.isEmpty)}
+  let taskID=AnalysisNode.decode(w.meeting.todos)![0].id
+  w.toggleTask(taskID);precondition(w.meeting.completedTasks==[taskID]);w.tab="待办";precondition(w.sectionSnapshot.body.contains("已完成"));w.toggleTask(taskID);precondition(w.meeting.completedTasks?.isEmpty==true)
   let saved=try JSONDecoder().decode(Meeting.self,from:Data(contentsOf:w.folder.appendingPathComponent("meeting.json")))
   precondition(saved.disagreements==w.meeting.disagreements)
   w.phase="录音中";let id=w.meeting.id;w.newMeeting();precondition(w.meeting.id==id)

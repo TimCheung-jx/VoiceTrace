@@ -7,6 +7,7 @@ struct AssistantPane:View {
   VStack(alignment:.leading,spacing:12){
    HStack{Image(systemName:"sparkle").foregroundStyle(p.actionText);Text("会议助手").font(.system(size:14,weight:.semibold));Spacer();Button(action:close){Image(systemName:"sidebar.right")}.buttonStyle(.plain).help("收起AI助手").accessibilityLabel("收起AI助手")}
    Text("根据逐字稿回答，重要内容附原文时间。").font(.system(size:13)).foregroundStyle(p.muted).lineSpacing(5)
+   HStack(spacing:8){Button{w.tab="思维链"}label:{Label("观点导图",systemImage:"point.3.connected.trianglepath.dotted")}.buttonStyle(QuietButton(tint:p.actionText,outlined:true));Button{w.tab="分歧点"}label:{Label("分歧洞察",systemImage:"arrow.triangle.branch")}.buttonStyle(QuietButton(tint:p.actionText,outlined:true))}
    VStack(spacing:9){
     quick("本次会议有哪些决定？")
     quick("与会人员有哪些明确分歧？请区分意见冲突、执行条件与待确认信息。",label:"本次会议有哪些分歧？")

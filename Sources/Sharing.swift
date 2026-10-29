@@ -7,10 +7,13 @@ struct ContentSnapshot {
  var section:String
  var body:String
  var dated:Date=Date()
+ var nodes:[AnalysisNode]?=nil
  var plain:String {meeting+"\n"+section+"\n\n"+body}
  func withTimestamps(_ enabled:Bool)->Self {
   guard !enabled else{return self};var value=self
   value.body=body.replacingOccurrences(of:"\\[\\d{1,3}:\\d{2}(?::\\d{2})?\\]",with:"",options:.regularExpression)
+  func clear(_ nodes:[AnalysisNode])->[AnalysisNode]{nodes.map{node in var n=node;n.times=[];n.children=n.children.map{clear($0)};return n}}
+  value.nodes=nodes.map{clear($0)}
   return value
  }
 }
@@ -53,7 +56,21 @@ enum DownloadFormat:String,CaseIterable {
   let attrs:[NSAttributedString.Key:Any]=[.font:font,.foregroundColor:NSColor(calibratedWhite:0.16,alpha:1),.paragraphStyle:paragraph]
   let title=NSAttributedString(string:item.meeting+" · 思维链",attributes:titleAttrs)
   let titleHeight=ceil(title.boundingRect(with:NSSize(width:width-pad*2,height:10000),options:[.usesLineFragmentOrigin,.usesFontLeading]).height)+20
-  let rows=item.body.components(separatedBy:"\n").filter{!$0.trimmingCharacters(in:.whitespaces).isEmpty}.map {line -> (NSAttributedString,CGFloat,CGFloat) in
+  func flatten(_ nodes:[AnalysisNode],depth:Int=0)->[String]{
+   var rows:[String]=[]
+   let indent=String(repeating:" ",count:depth*5)
+   for n in nodes {
+    let speaker=n.speaker.map{$0+" · "} ?? ""
+    let times=n.times.map{"["+Wire.time($0)+"]"}.joined(separator:" ")
+    let title=indent+n.title+"\n"
+    let body=indent+speaker+n.body+" "+times
+    rows.append(title+body)
+    rows.append(contentsOf:flatten(n.children ?? [],depth:depth+1))
+   }
+   return rows
+  }
+  let sourceRows=item.nodes.map{flatten($0)} ?? item.body.components(separatedBy:"\n")
+  let rows=sourceRows.filter{!$0.trimmingCharacters(in:.whitespaces).isEmpty}.map {line -> (NSAttributedString,CGFloat,CGFloat) in
    let leading=line.prefix{ $0==" " || $0=="\t" }.count
    let indent=min(CGFloat(leading)*10,180)
    let text=NSAttributedString(string:line.trimmingCharacters(in:.whitespaces),attributes:attrs)
@@ -69,6 +86,10 @@ enum DownloadFormat:String,CaseIterable {
   var top=height-pad-titleHeight
   for (text,h,indent) in rows {
    let rect=NSRect(x:pad+indent,y:top-h,width:width-pad*2-indent,height:h)
+   if item.nodes != nil && indent>0 {
+    NSColor(calibratedRed:0.025,green:0.37,blue:0.27,alpha:0.5).setStroke()
+    let path=NSBezierPath();path.lineWidth=2;path.move(to:NSPoint(x:pad+indent-25,y:top+20));path.line(to:NSPoint(x:pad+indent-25,y:rect.midY));path.line(to:NSPoint(x:rect.minX,y:rect.midY));path.stroke()
+   }
    NSColor(calibratedRed:0.91,green:0.94,blue:0.91,alpha:1).setFill();NSBezierPath(roundedRect:rect,xRadius:14,yRadius:14).fill()
    text.draw(with:rect.insetBy(dx:24,dy:20),options:[.usesLineFragmentOrigin,.usesFontLeading]);top-=h+20
   }
@@ -115,7 +136,9 @@ extension Workspace {
   case "章节":body=meeting.chapters
   default:body=meeting.todos
   }
-  return ContentSnapshot(meeting:meeting.title,section:tab,body:body)
+  var readable=AnalysisNode.plain(body)
+  if tab=="待办",let nodes=AnalysisNode.decode(body){readable=nodes.map{node in var n=node;if (meeting.completedTasks ?? []).contains(n.id){n.kind="已完成 · "+(n.kind ?? "")};return AnalysisNode.plain(AnalysisNode.encode([n]))}.joined(separator:"\n\n")}
+  return ContentSnapshot(meeting:meeting.title,section:tab,body:readable,nodes:tab=="思维链" ? AnalysisNode.decode(body):nil)
  }
  func copySection(timestamps:Bool) {
   let item=sectionSnapshot.withTimestamps(timestamps)

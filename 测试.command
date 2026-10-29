@@ -5,7 +5,7 @@ testDir=$(mktemp -d /private/tmp/voicetrace-tests.XXXXXX)
 cp Sources/*.swift Tests/*.swift "$testDir/"
 core=("$testDir/Protocol.swift" "$testDir/Summary.swift")
 common=(-swift-version 5 -parse-as-library -module-cache-path /private/tmp/voicetrace-module-cache)
-for name in Protocol Summary; do
+for name in Protocol Summary Analysis; do
  swiftc "${common[@]}" "${core[@]}" "$testDir/${name}Tests.swift" -o "$testDir/check-$name"
  "$testDir/check-$name"
 done
@@ -30,3 +30,9 @@ swiftc "${common[@]}" -D PERSONAL_BUILD "${core[@]}" "$testDir/Configurations.sw
 
 swiftc "${common[@]}" "$testDir/Styles.swift" "$testDir/DesignTests.swift" -framework SwiftUI -framework AppKit -o "$testDir/check-design"
 "$testDir/check-design"
+
+# 当前 0.13.1 工作台；上方继续校验兼容旧资料所需的底层逻辑。
+./Next/test.command
+./Next/test-workspace.command
+./Next/test-audio.command
+./Next/test-export.command

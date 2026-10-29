@@ -57,6 +57,20 @@ struct DemoMeeting {
   """
   m.todos="设计：周三提供电脑端页面稿。[10:55]\n\n研发：周五提交接口验证结果。[10:55]\n\n设计：拟定验收标准草案，期限未明确。[17:20]"
   m.notes="[10:55] 首轮只做电脑端，注意保留接口验证结果。\n\n需要追问：验收指标由谁最终确认？"
+  func node(_ title:String,_ body:String,_ time:Double,_ speaker:String?=nil,_ children:[AnalysisNode]=[])->AnalysisNode{AnalysisNode(title:title,body:body,speaker:speaker,times:[time],children:children)}
+  let design=node("电脑端优先","先验证核心页面，手机端后续扩展。",156,"设计",[node("理由","试点期间先收集具体的使用障碍。",156,"设计")])
+  let engineering=node("上线前先验证接口","稳定性还需验证，暂不承诺正式上线日期。",382,"研发",[node("回应与结论","周五提交验证结果，验证后再定上线日期。",655,"项目负责人")])
+  let scope=node("首轮试点范围","围绕参与团队和交付范围形成一致安排。",0,nil,[node("两个内部团队试用","先跑通核心流程。",0,"项目负责人"),design,node("会议决定","确定两个团队参与电脑端试点。",655,"项目负责人")])
+  m.tree=AnalysisNode.encode([scope,node("技术验证与上线安排","上线时间取决于接口验证结果。",382,nil,[engineering])])
+  m.summary=AnalysisNode.encode([node("背景与目标","选择两个内部团队试用，验证核心流程。",0),node("议题讨论","先确定范围，再落实验证和交付。",156,nil,[design,engineering]),node("明确决定","首轮聚焦电脑端；上线日期待验证结果。",655,"项目负责人"),node("待确认","验收指标下次确认。",1040,"设计")])
+  var condition=node("正式上线时间","已形成先验证、后确定日期的处理安排；尚未明确上线日期。",655,nil,[node("技术条件","接口稳定性仍需验证。",382,"研发"),node("处理安排","先交付验证结果，再确定日期。",655,"项目负责人")]);condition.kind="执行条件不同"
+  var pending=node("验收指标","先拟草案，具体指标下次确认；未记录反对意见。",1040,nil,[node("建议","先提交验收标准草案。",1040,"设计")]);pending.kind="信息待确认"
+  m.disagreements=AnalysisNode.encode([condition,pending])
+  m.chapters=AnalysisNode.encode([node("试点范围与目标","确认首轮参与团队和核心流程。",0),node("设计安排","电脑端优先，收集具体使用障碍。",156),node("技术验证","接口稳定性尚待验证，暂不承诺上线日期。",382),node("决定与分工","明确页面稿、验证结果及上线安排。",655),node("验收标准","先拟草案，具体指标下次确认。",1040)])
+  var task1=node("提供电脑端页面稿","用于两个内部团队的首轮试点。",655);task1.kind="明确任务";task1.owner="设计";task1.deadline="周三"
+  var task2=node("提交接口验证结果","验证完成后再确定正式上线日期。",655);task2.kind="明确任务";task2.owner="研发";task2.deadline="周五"
+  var task3=node("拟定验收标准草案","建议先拟草案；具体指标及责任分工下次确认。",1040);task3.kind="建议跟进"
+  m.todos=AnalysisNode.encode([task1,task2,task3])
   return m
  }
 }

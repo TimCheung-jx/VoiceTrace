@@ -41,7 +41,7 @@ import SwiftUI
  var body:some View{
   VStack(alignment:.leading,spacing:16){
    DialogTitle(title:"比较AI建议",subtitle:section+"：左侧为当前内容，右侧为AI新建议。")
-   HStack(alignment:.top){column("当前内容",w.sectionSnapshot.body);column("AI新建议",suggestion)}
+   HStack(alignment:.top){column("当前内容",w.sectionSnapshot.body);column("AI新建议",AnalysisNode.plain(suggestion))}
    Text("采用前会备份当前文字，采用后解除此页人工保护。也可取消并继续保留人工版本。").font(.callout).foregroundStyle(Color.primary.opacity(0.72))
    HStack{Spacer();Button("保留当前版本"){dismiss()};Button("采用AI建议"){confirm=true}.disabled(w.busy || w.meeting.aiSuggestion==nil)}
   }.padding(24).frame(width:950,height:600).background(Palette.named(w.theme).paper).foregroundStyle(Palette.named(w.theme).ink).confirmationDialog("采用AI建议并解除这一页的人工保护？",isPresented:$confirm){Button("采用并备份当前版本"){if w.adoptSuggestion(section){dismiss()}}}
@@ -76,7 +76,7 @@ import SwiftUI
  let revision:TextRevision
  let disabled:Bool
  let restore:()->Void
- var preview:String{let rows=revision.meeting.sentences.map{sentence in "["+Wire.time(sentence.start)+"] "+sentence.speaker+"："+sentence.text};return revision.meeting.summary+"\n\n"+rows.joined(separator:"\n")}
+ var preview:String{let rows=revision.meeting.sentences.map{sentence in "["+Wire.time(sentence.start)+"] "+sentence.speaker+"："+sentence.text};return AnalysisNode.plain(revision.meeting.summary)+"\n\n"+rows.joined(separator:"\n")}
  var body:some View{
   DisclosureGroup{
    ScrollView{Text(preview).textSelection(.enabled)}.frame(maxHeight:200)
@@ -90,7 +90,7 @@ import SwiftUI
  var body:some View{
   VStack(alignment:.leading,spacing:12){
    Text("第 \(index+1) 段").font(.title3.bold())
-   ForEach(["AI纪要","思维链","分歧点","章节","待办"],id:\.self){title in VStack(alignment:.leading,spacing:6){Text(title).font(.headline);Text(fields[Workspace.sectionKeys[title] ?? ""] ?? "").textSelection(.enabled)}}
+   ForEach(["AI纪要","思维链","分歧点","章节","待办"],id:\.self){title in VStack(alignment:.leading,spacing:6){Text(title).font(.headline);Text(AnalysisNode.plain(fields[Workspace.sectionKeys[title] ?? ""] ?? "")).textSelection(.enabled)}}
    Divider()
   }
  }
